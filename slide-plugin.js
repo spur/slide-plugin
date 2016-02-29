@@ -54,6 +54,7 @@ SlidePlugin.prototype.reset = function () {
 	removeListener(window, 'pointercancel', this.onPointerCancel, { context: this });
 	if (this.lockId) { interactionLock.releaseLock(this.lockId); }
 	this.isInitiated = false;
+	this.target = null;
 };
 
 SlidePlugin.prototype.cancel = function (e) {
@@ -73,7 +74,7 @@ SlidePlugin.prototype.onPointerMove = function (e) {
 			return;
 		}
 
-		this.lockId = interactionLock.requestLockOn(e.target);
+		this.lockId = interactionLock.requestLockOn(this.target);
 		if (!this.lockId) { return this.reset(); }
 
 		if (Math.abs(deltaY) > Math.abs(deltaX)) {
@@ -108,6 +109,7 @@ SlidePlugin.prototype.onPointerDown = function (e) {
 	this.isInitiated = true;
 	this.isSliding = false;
 	this.startTime = Date.now();
+	this.target = e.target;
 
 	this.startCoords = {
 		x: e.clientX,
