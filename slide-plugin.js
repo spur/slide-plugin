@@ -25,6 +25,8 @@ function SlidePlugin(component) {
 	this.axis = null;
 }
 
+SlidePlugin.plugName = 'slide';
+
 SlidePlugin.prototype.slideStart = function (e, boundingBox) {
 	if (this.component.onSlideStart) { this.component.onSlideStart(e, boundingBox); }
 	if (this.component.props.onSlideStart) { this.component.props.onSlideStart(this.component, e, boundingBox); }
