@@ -37,9 +37,9 @@ SlidePlugin.prototype.sliding = function (e) {
 	if (this.component.props.onSlide) { this.component.props.onSlide(this.component, e); }
 };
 
-SlidePlugin.prototype.slideEnd = function (e, startCoords, swiped) {
-	if (this.component.onSlideEnd) { this.component.onSlideEnd(e, startCoords, swiped); }
-	if (this.component.props.onSlideEnd) { this.component.props.onSlideEnd(this.component, e, startCoords, swiped); }
+SlidePlugin.prototype.slideEnd = function (e, velocity) {
+	if (this.component.onSlideEnd) { this.component.onSlideEnd(e, velocity); }
+	if (this.component.props.onSlideEnd) { this.component.props.onSlideEnd(this.component, e, velocity); }
 };
 
 SlidePlugin.prototype.setEnable = function (enable) {
@@ -62,17 +62,32 @@ SlidePlugin.prototype.reset = function () {
 SlidePlugin.prototype.cancel = function (e) {
 	if (this.isSliding) {
 		this.isSliding = false;
-		this.slideEnd(e, this.startCoords, false);
+		this.slideEnd(e, this.velocity);
 	}
 	this.reset();
 };
 
 SlidePlugin.prototype.onPointerMove = function (e) {
+
+	const now = Date.now();
+	const dx = e.clientX - this.lastPosition.x;
+	const dy = e.clientY - this.lastPosition.y;
+	const dt = now - this.lastTime;
+	if (!this.axis) {
+		const distance = Math.sqrt(dx * dx + dy * dy);
+		this.velocity = 0.6 * (distance / dt) + 0.4 * this.velocity;
+	} else {
+		this.velocity = 0.6 * ((this.axis === 'x' ? dx : dy) / dt) + 0.4 * this.velocity;
+	}
+	this.lastTime = now;
+	this.lastPosition.x = e.clientX;
+	this.lastPosition.y = e.clientY;
+
 	if (!this.isSliding) {
 		var deltaX = e.clientX - this.startCoords.x;
 		var deltaY = e.clientY - this.startCoords.y;
-		var distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-		if (distance < SLIDE_THRESHOLD) {
+
+		if (Math.sqrt(deltaX * deltaX + deltaY * deltaY) < SLIDE_THRESHOLD) {
 			return;
 		}
 
@@ -95,6 +110,8 @@ SlidePlugin.prototype.onPointerMove = function (e) {
 		} else {
 			this.reset();
 		}
+
+		return;
 	}
 
 	e.preventDefault();
@@ -110,7 +127,12 @@ SlidePlugin.prototype.onPointerDown = function (e) {
 	}
 	this.isInitiated = true;
 	this.isSliding = false;
-	this.startTime = Date.now();
+	this.lastTime = Date.now();
+	this.lastPosition = {
+		x: e.clientX,
+		y: e.clientY
+	};
+	this.velocity = 0;
 	this.target = e.target;
 
 	this.startCoords = {
@@ -126,18 +148,8 @@ SlidePlugin.prototype.onPointerDown = function (e) {
 
 SlidePlugin.prototype.onPointerUp = function (e) {
 	if (this.isSliding) {
-		var timeDelta = Date.now() - this.startTime;
-		var swipe;
-		if (this.axis) {
-			swipe = didSwipe(getAxisCoordinate(e, this.axis) - this.startCoords[this.axis], timeDelta);
-		} else {
-			swipe =
-				didSwipe(e.clientX - this.startCoords.x, timeDelta) && 'x' ||
-				didSwipe(e.clientY - this.startCoords.y, timeDelta) && 'y';
-		}
-
 		e.preventDefault();
-		this.slideEnd(e, this.startCoords, swipe);
+		this.slideEnd(e, this.velocity);
 	}
 
 	this.isSliding = false;
@@ -153,7 +165,6 @@ SlidePlugin.prototype.componentWillUnmount = function () {
 	removeListener(this.DOMNode, 'pointerdown', this.onPointerDown, { context: this });
 	this.reset();
 	this.DOMNode = null;
-	this.component = null;
 };
 
 module.exports = SlidePlugin;
