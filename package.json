@@ -1,6 +1,6 @@
 {
   "name": "spur-slide-plugin",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Spur plugin to add slide features to a React component.",
   "main": "slide-plugin.js",
   "repository": {
